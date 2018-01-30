@@ -33,7 +33,7 @@ function skipSpace(string){ //take away initial space
 //function that checks if an expression is an application, if so, parses a parenthesized string of arguments
 function parseApply(expr,program){
   program = skipSpace(program)
-  console.log("program "+program)
+  console.log(":"+program)
   //if the first character is not ( then it is not an application, returns the expr
   if (program[0] != "(")
     return {expr: expr, rest: program}
@@ -64,8 +64,6 @@ function parse(program){
     throw new SyntaxError("Unexpected text after program")
   return result.expr
 }
-
-console.log(parse("+(a,10)"))
 
 //Evaluator takes a syntax tree. Evaluates the expression and returns the corresponding value
 function evaluate(expr, env){ //takes an expression and its environment
@@ -166,9 +164,41 @@ function run(){
   return evaluate(parse(program), env)
 }
 
-run("do(define(total, 0),",
-    "   define(count, 1),",
-    "   while(<(count, 11),",
-    "         do(define(total, +(total, count)),",
-    "            define(count, +(count, 1)))),",
-    "   print(total))")
+// run("do(define(total, 0),",
+//     "   define(count, 1),",
+//     "   while(<(count, 11),",
+//     "         do(define(total, +(total, count)),",
+//     "            define(count, +(count, 1)))),",
+//     "   print(total))")
+
+//possibility of defining functions in EGG
+specialForms['fun'] = function(args,env){ //args are the fun function's arguments and  env is the bodu or envrionment
+  if (!args.length)
+    throw new SyntaxError("Functions need a body")
+  function name(expr){
+    if(expr.type != "word")
+      throw new SyntaxError("Args names must be words")
+    return expr.name
+  }
+  let argNames = args.slice(0, args.length -1).map(name)
+  let body = args[args.length - 1]
+
+  return function(){
+    if (arguments.length != argNames.length)
+      throw new TypeError("Wrong number of arguments")
+    let localEnv = Object.create(env)
+    for (let i = 0; i< arguments.length; i++)
+      localEnv[argNames[i]] = arguments[i]
+    return evaluate(body,localEnv)
+  }
+}
+//Run program with language.
+run("do(define(plusOne, fun(a, +(a, 1))),",
+    "   print(plusOne(10)))");
+// → 11
+// 
+// run("do(define(pow, fun(base, exp,",
+//     "     if(==(exp, 0),",
+//     "        1,",
+//     "        *(base, pow(base, -(exp, 1)))))),",
+//     "   print(pow(2, 10)))");
