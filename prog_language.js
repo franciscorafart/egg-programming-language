@@ -74,7 +74,7 @@ function evaluate(expr, env){ //takes an expression and its environment
       return expr.value
 
     case "word":
-      if (exp.name in env) //evaulate if the expression is defined in the environment
+      if (expr.name in env) //evaulate if the expression is defined in the environment
         return env[expr.name]
       else
         throw new ReferenceError("Undefined Variable: "+ expr.name)
@@ -82,7 +82,7 @@ function evaluate(expr, env){ //takes an expression and its environment
     case "apply": //
       if (expr.operator.type == "word" &&
           expr.operator.name in specialForms) //special forms like if, while.
-        return specialForms[expr.opertor.name](expr.args, env) //pass it to a function that evaluates this form
+        return specialForms[expr.operator.name](expr.args, env) //pass it to a function that evaluates this form
 
       let op = evaluate(expr.operator, env)
       if (typeof op != "function")
@@ -142,3 +142,33 @@ specialForms["define"] = function(args, env){
 }
 
 //Environnment
+let topEnv = Object.create(null) //empty object
+topEnv["true"] = true
+topEnv["false"] = false
+
+//add operations to the environment
+let characters = ['+','-','*','/','==','<','>']
+characters.forEach(function(op){
+  //a new function that takes two arguments and runs code on the string in the second argument
+  topEnv[op] = new Function("a, b", "return a "+op+" b;")
+})
+
+//print function
+topEnv["print"] = function(value){
+  console.log(value)
+  return value
+}
+
+//run function to run a program and create an environment
+function run(){
+  let env = Object.create(topEnv)
+  let program = Array.prototype.slice.call(arguments, 0).join('\n') //trick to turn array-like object into real array
+  return evaluate(parse(program), env)
+}
+
+run("do(define(total, 0),",
+    "   define(count, 1),",
+    "   while(<(count, 11),",
+    "         do(define(total, +(total, count)),",
+    "            define(count, +(count, 1)))),",
+    "   print(total))")
